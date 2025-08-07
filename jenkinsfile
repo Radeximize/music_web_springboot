@@ -20,15 +20,27 @@ pipeline {
         stage('Build Application') {
             steps {
                 echo 'Building the Spring Boot application...'
-                sh 'chmod +x mvnw'
-                sh './mvnw clean package -DskipTests'
+                script {
+                    if (isUnix()) {
+                        sh 'chmod +x mvnw'
+                        sh './mvnw clean package -DskipTests'
+                    } else {
+                        bat 'mvnw.cmd clean package -DskipTests'
+                    }
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
                 echo 'Running tests...'
-                sh './mvnw test'
+                script {
+                    if (isUnix()) {
+                        sh './mvnw test'
+                    } else {
+                        bat 'mvnw.cmd test'
+                    }
+                }
             }
             post {
                 always {
@@ -42,8 +54,13 @@ pipeline {
             steps {
                 echo 'Building Docker image...'
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
-                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                    if (isUnix()) {
+                        sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                        sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                    } else {
+                        bat "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                        bat "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                    }
                 }
             }
         }
@@ -51,13 +68,24 @@ pipeline {
         stage('Stop Previous Container') {
             steps {
                 script {
-                    sh '''
-                        if [ $(docker ps -q -f name=${CONTAINER_NAME}) ]; then
-                            echo 'Stopping existing container...'
-                            docker stop ${CONTAINER_NAME}
-                            docker rm ${CONTAINER_NAME}
-                        fi
-                    '''
+                    if (isUnix()) {
+                        sh '''
+                            if [ $(docker ps -q -f name=${CONTAINER_NAME}) ]; then
+                                echo 'Stopping existing container...'
+                                docker stop ${CONTAINER_NAME}
+                                docker rm ${CONTAINER_NAME}
+                            fi
+                        '''
+                    } else {
+                        bat '''
+                            @echo off
+                            for /f %%i in ('docker ps -q -f name=%CONTAINER_NAME%') do (
+                                echo Stopping existing container...
+                                docker stop %CONTAINER_NAME%
+                                docker rm %CONTAINER_NAME%
+                            )
+                        '''
+                    }
                 }
             }
         }
@@ -66,14 +94,25 @@ pipeline {
             steps {
                 echo 'Deploying application...'
                 script {
-                    sh '''
-                        docker run -d \
-                            --name ${CONTAINER_NAME} \
-                            -p ${HOST_PORT}:${APP_PORT} \
-                            -v $(pwd)/data:/app/data \
-                            --restart unless-stopped \
-                            ${DOCKER_IMAGE}:latest
-                    '''
+                    if (isUnix()) {
+                        sh '''
+                            docker run -d \
+                                --name ${CONTAINER_NAME} \
+                                -p ${HOST_PORT}:${APP_PORT} \
+                                -v $(pwd)/data:/app/data \
+                                --restart unless-stopped \
+                                ${DOCKER_IMAGE}:latest
+                        '''
+                    } else {
+                        bat '''
+                            docker run -d ^
+                                --name %CONTAINER_NAME% ^
+                                -p %HOST_PORT%:%APP_PORT% ^
+                                -v "%CD%\\data":/app/data ^
+                                --restart unless-stopped ^
+                                %DOCKER_IMAGE%:latest
+                        '''
+                    }
                 }
             }
         }
@@ -82,22 +121,46 @@ pipeline {
             steps {
                 echo 'Performing health check...'
                 script {
-                    sh '''
-                        echo 'Waiting for application to start...'
-                        sleep 30
-                        
-                        for i in {1..10}; do
-                            if curl -f http://localhost:${HOST_PORT}/api/auth/test; then
-                                echo 'Application is healthy!'
-                                exit 0
-                            fi
-                            echo "Attempt $i failed, retrying in 10 seconds..."
-                            sleep 10
-                        done
-                        
-                        echo 'Health check failed'
-                        exit 1
-                    '''
+                    if (isUnix()) {
+                        sh '''
+                            echo 'Waiting for application to start...'
+                            sleep 30
+                            
+                            for i in {1..10}; do
+                                if curl -f http://localhost:${HOST_PORT}/api/auth/test; then
+                                    echo 'Application is healthy!'
+                                    exit 0
+                                fi
+                                echo "Attempt $i failed, retrying in 10 seconds..."
+                                sleep 10
+                            done
+                            
+                            echo 'Health check failed'
+                            exit 1
+                        '''
+                    } else {
+                        bat '''
+                            @echo off
+                            echo Waiting for application to start...
+                            timeout /t 30 /nobreak > nul
+                            
+                            for /L %%i in (1,1,10) do (
+                                echo Attempting health check %%i/10...
+                                curl -f http://localhost:%HOST_PORT%/api/auth/test && (
+                                    echo Application is healthy!
+                                    goto :success
+                                )
+                                echo Attempt %%i failed, retrying in 10 seconds...
+                                timeout /t 10 /nobreak > nul
+                            )
+                            
+                            echo Health check failed
+                            exit /b 1
+                            
+                            :success
+                            echo Health check passed
+                        '''
+                    }
                 }
             }
         }
@@ -106,7 +169,13 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed'
-            sh 'docker image prune -f'
+            script {
+                if (isUnix()) {
+                    sh 'docker image prune -f'
+                } else {
+                    bat 'docker image prune -f'
+                }
+            }
         }
         success {
             echo 'Deployment successful!'
@@ -114,7 +183,13 @@ pipeline {
         }
         failure {
             echo 'Deployment failed!'
-            sh 'docker logs ${CONTAINER_NAME} || true'
+            script {
+                if (isUnix()) {
+                    sh 'docker logs ${CONTAINER_NAME} || true'
+                } else {
+                    bat 'docker logs %CONTAINER_NAME% || echo "No container logs available"'
+                }
+            }
         }
     }
 }
