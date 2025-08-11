@@ -1,12 +1,26 @@
 package com.example.music_app_project.controller;
 
-import com.example.music_app_project.model.*;
-import com.example.music_app_project.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.music_app_project.model.Song;
+import com.example.music_app_project.repository.AlbumRepository;
+import com.example.music_app_project.repository.ArtistRepository;
+import com.example.music_app_project.repository.GenreRepository;
+import com.example.music_app_project.repository.SongRepository;
 
 @RestController
 @RequestMapping("/api/songs")
@@ -15,21 +29,46 @@ public class SongController {
 
     @Autowired
     private SongRepository songRepository;
-
     @Autowired
     private ArtistRepository artistRepository;
-
     @Autowired
     private AlbumRepository albumRepository;
-
     @Autowired
     private GenreRepository genreRepository;
 
-    // Get all songs
+    // Get all songs with optional filters
     @GetMapping
-    public List<Song> getAllSongs() {
-        return songRepository.findAll();
+public List<Song> getAllSongs(
+        @RequestParam(required = false) String searchTerm,
+        @RequestParam(required = false) String genre,
+        @RequestParam(required = false) String artist) { // <-- thêm tham số mới
+
+    // Nếu chọn option "Only songs without artist"
+    if ("none".equalsIgnoreCase(artist)) {
+        return songRepository.findSongsWithoutArtistButHasGenre();
     }
+
+    Integer genreId = null;
+    if (genre != null) {
+        if ("unknown".equalsIgnoreCase(genre)) {
+            genreId = -1; // lọc bài không có genre
+        } else {
+            try {
+                genreId = Integer.parseInt(genre);
+            } catch (NumberFormatException e) {
+                genreId = null; 
+            }
+        }
+    }
+
+    boolean hasSearch = searchTerm != null && !searchTerm.trim().isEmpty();
+    boolean hasGenre = genreId != null;
+
+    if (hasSearch || hasGenre) {
+        return songRepository.findBySearchTermAndGenre(searchTerm, genreId);
+    }
+    return songRepository.findAll();
+}
 
     // Get song by ID
     @GetMapping("/{id}")
@@ -67,7 +106,6 @@ public class SongController {
         existingSong.setDuration(songDetails.getDuration());
         existingSong.setReleaseDate(songDetails.getReleaseDate());
         existingSong.setAudioFile(songDetails.getAudioFile());
-
         Song updated = songRepository.save(existingSong);
         return ResponseEntity.ok(updated);
     }

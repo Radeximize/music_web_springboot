@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skibidify Music Streaming</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div id="auth-container" class="auth-container">
+        <div class="auth-modal">
+            <button class="close-btn">&times;</button>
+            <div class="auth-tabs">
+                <button class="tab active">Login</button>
+                <button class="tab">Register</button>
+            </div>
+
+            <div class="auth-form active">
+                <h2>Welcome Back</h2>
+                <form id="loginForm">
+                    <input type="text" id="loginUsername" placeholder="Username" required>
+                    <input type="password" id="loginPassword" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                    <p>Don't have an account? <a href="#">Sign up</a></p>
+                </form>
+            </div>
+
+            <div class="auth-form">
+                <h2>Create Account</h2>
+                <form id="registerForm">
+                    <input type="text" id="registerUsername" placeholder="Username" required>
+                    <input type="email" id="registerEmail" placeholder="Email" required>
+                    <input type="password" id="registerPassword" placeholder="Password" required>
+                    <button type="submit">Sign Up</button>
+                    <p>Already have an account? <a href="#">Sign in</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-app" class="main-app" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-music"></i>
+                <span>Skibidify</span>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" onclick="showSection('home')">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('search')">
+                    <i class="fas fa-search"></i> Search
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('library')">
+                    <i class="fas fa-book"></i> Your Library
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('favorites')">
+                    <i class="fas fa-heart"></i> Liked Songs
+                </a>
+            </nav>
+
+            <div class="playlists-section">
+                <h3>Playlists</h3>
+                <div id="playlistsList"></div>
+                <button class="create-playlist">
+                    <i class="fas fa-plus"></i> Create Playlist
+                </button>
+            </div>
+
+            <div class="user-profile">
+                <button id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <section id="homeSection" class="content-section active">
+                <h1>Good evening</h1>
+                <div class="section-grid">
+                    <!-- Recently Played -->
+                    <div class="section-row">
+                        <h2>Recently Played <span>Show all</span></h2>
+                        <div id="recentlyPlayedGrid" class="music-grid"></div>
+                    </div>
+
+                    <!-- Popular Artists -->
+                    <div class="section-row">
+                        <h2>Popular Artists <span>Show all</span></h2>
+                        <div id="artistsGrid" class="music-grid"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="searchSection" class="content-section">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search for songs, artists...">
+                    <select id="genreFilter">
+                        <option value="">All Genres</option>
+                        <!-- Genres loaded dynamically -->
+                    </select>
+                    <select id="artistFilter">
+                        <option value="">All Artists</option>
+                        <!-- Artists loaded dynamically -->
+                    </select>
+                </div>
+                <div id="searchResults"></div>
+            </section>
+
+            <section id="librarySection" class="content-section">
+                <div class="library-tabs">
+                    <button class="tab active" onclick="showLibraryTab('playlists')">Playlists</button>
+                    <button class="tab" onclick="showLibraryTab('artists')">Artists</button>
+                    <button class="tab" onclick="showLibraryTab('albums')">Albums</button>
+                </div>
+                <div id="libraryContent"></div>
+            </section>
+
+            <section id="favoritesSection" class="content-section">
+                <div class="favorites-header">
+                    <h1>Liked Songs</h1>
+                    <p id="favoritesCount">0 songs</p>
+                </div>
+                <div class="favorites-actions">
+                    <button onclick="playFavorites()"><i class="fas fa-play"></i> Play</button>
+                    <button onclick="shuffleFavorites()"><i class="fas fa-random"></i> Shuffle</button>
+                </div>
+                <div id="favoritesList"></div>
+            </section>
+        </main>
+
+        <!-- Player -->
+        <footer class="player">
+            <div class="player-left">
+                <img id="currentSongCover" src="" alt="Song cover">
+                <div class="song-info">
+                    <h4 id="currentSongTitle">Select a song</h4>
+                    <p id="currentSongArtist">Artist</p>
+                </div>
+                <button id="favoriteBtn" class="favorite-btn"><i class="far fa-heart"></i></button>
+            </div>
+
+            <div class="player-center">
+                <div class="player-controls">
+                    <button id="shuffleBtn"><i class="fas fa-random"></i></button>
+                    <button id="previousBtn"><i class="fas fa-step-backward"></i></button>
+                    <button id="playPauseBtn"><i class="fas fa-play"></i></button>
+                    <button id="nextBtn"><i class="fas fa-step-forward"></i></button>
+                    <button id="repeatBtn"><i class="fas fa-repeat"></i></button>
+                </div>
+                <div class="progress-bar">
+                    <span id="currentTime">0:00</span>
+                    <input type="range" id="progressRange" min="0" max="100" value="0">
+                    <span id="totalTime">0:00</span>
+                </div>
+            </div>
+
+            <div class="player-right">
+                <button id="queueBtn"><i class="fas fa-list"></i></button>
+                <div class="volume-control">
+                    <i class="fas fa-volume-down"></i>
+                    <input type="range" id="volumeRange" min="0" max="100" value="50">
+                    <i class="fas fa-volume-up"></i>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Queue Sidebar -->
+        <aside id="queueSidebar" class="queue-sidebar">
+            <h2>Queue</h2>
+            <button class="close-btn">&times;</button>
+            <div id="queueCurrentSong"></div>
+            <div id="queueList"></div>
+        </aside>
+
+        <!-- Context Menu -->
+        <div id="contextMenu" class="context-menu">
+            <button onclick="playNext()">Play Next</button>
+            <button onclick="addToQueue()">Add to Queue</button>
+            <button onclick="toggleFavorite()">Add to Favorites</button>
+            <button onclick="showAddToPlaylist()">Add to Playlist</button>
+        </div>
+
+        <!-- Add to Playlist Modal -->
+        <div id="addToPlaylistModal" class="modal">
+            <div class="modal-content">
+                <h2>Add to Playlist</h2>
+                <div id="playlistList"></div>
+                <button onclick="createNewPlaylist()">Create New Playlist</button>
+            </div>
+        </div>
+
+        <!-- Audio Element -->
+        <audio id="audioPlayer"></audio>
+
+        <!-- Theme Toggle -->
+        <div class="theme-toggle">
+            <button id="theme-toggle">🌙</button>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="./js/config.js"></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/ui.js"></script>
+    <script src="./js/player.js"></script>
+    <script src="./js/favorites.js"></script>
+    <script src="./js/playlist.js"></script>
+    <script src="./js/theme.js"></script>
+    <script src="./js/visualizer.js"></script>
+    <script src="./js/queue.js"></script>
+    <script src="./js/search.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+</html>

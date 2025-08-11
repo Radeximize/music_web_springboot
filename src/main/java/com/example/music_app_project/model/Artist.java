@@ -1,7 +1,13 @@
 package com.example.music_app_project.model;
 
 import java.time.LocalDate;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "Artists")
@@ -22,7 +28,7 @@ public class Artist {
     private LocalDate birthDate;
 
     // Getters and setters
-    // ArtistID
+    // artistID
     public Integer getArtistID() {
         return artistID;
     }
@@ -31,39 +37,39 @@ public class Artist {
         this.artistID = artistID;
     }
 
-    // ArtistName
-    public String getArtistName() {
+    // name
+    public String getName() {
         return name;
     }
 
-    public void setArtistName(String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
-    // ArtistBio
-    public String getArtistBio() {
+    // bio
+    public String getBio() {
         return bio;
     }
 
-    public void setArtistBio(String bio) {
+    public void setBio(String bio) {
         this.bio = bio;
     }
 
-    // ArtistCountry
-    public String getArtistCountry() {
+    // country
+    public String getCountry() {
         return country;
     }
 
-    public void setArtistCountry(String country) {
+    public void setCountry(String country) {
         this.country = country;
     }
 
-    // ArtistBirthDate
-    public LocalDate getArtistBirthDate() {
+    // birthDate
+    public LocalDate getBirthDate() {
         return birthDate;
     }
 
-    public void setArtistBirthday(LocalDate birthDate) {
+    public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
     }
 }
